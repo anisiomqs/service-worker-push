@@ -1,0 +1,21 @@
+{
+  "name": "push-demo",
+  "version": "1.0.0",
+  "description": "Systêxtil Push Demonstration",
+  "repository": "",
+  "private": true,
+  "scripts": {
+    "start": "node app.js",
+    "monitor": "nodemon app.js",
+    "deploy": "gcloud preview app deploy app.yaml"
+  },
+  "author": "Anisio Marques Junior <anisiomarxjr@gmail.com>",
+  "license": "Apache Version 2.0",
+  "dependencies": {
+    "express": "^4.12.0",
+    "ejs": "latest",
+    "body-parser":"latest",
+    "gcm": "latest",
+    "nedb": "latest"
+  }
+}
