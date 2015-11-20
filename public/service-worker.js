@@ -30,29 +30,25 @@ function showNotification(title, body, icon, data) {
 }
 
 self.addEventListener('push', function(e) {
-  if (!(self.Notification && self.Notification.permission === 'granted')) {
-    console.error('notificação não suportada');
-    return;
-  }
+  e.waitUntil(
+    Promise.resolve(getIdb().get('systextil-push','id')).then(function(id){
+      fetch("/notifications/"+id).then(function(response) {  
+        if (response.status !== 200) {  
+          console.log('Houston. Status Code: ' + response.status);  
+          throw new Error();  
+        }
+        return response.json().then(function(data) {
+          console.log(data);
+          var title = data[0].title;
+          var message = data[0].message;
 
-  Promise.resolve(getIdb().get('systextil-push','name')).then(function(name){
-    fetch("/notifications/"+name).then(function(response) {  
-      if (response.status !== 200) {  
-        console.log('Houston. Status Code: ' + response.status);  
-        throw new Error();  
-      }
-
-      return response.json().then(function(data) {
-        console.log(data);
-        var title = data[0].title;
-        var message = data[0].message;
-
-        return self.registration.showNotification(title, {  
-          body: message
+          return self.registration.showNotification(title, {  
+            body: message
+          });  
         });  
-      });  
-    });
-  });
+      });
+    })
+  );
 });
 
 self.addEventListener('notificationclick', function(event) {

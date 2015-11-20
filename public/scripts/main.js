@@ -17,35 +17,32 @@ function getIdb() {
 }
 
 function onPushSubscription(pushSubscription) {
-  window.PushDemo.ui.showGCMPushOptions(true);
   window.PushDemo.ui.setPushSwitchDisabled(false);
 
   console.log('pushSubscription: ', pushSubscription);
 
-  var sendPushViaXHRButton = document.querySelector('.js-xhr-button');
-  sendPushViaXHRButton.addEventListener('click', function(e) {
-    var subscriptionId = null;
-    if (pushSubscription.subscriptionId) {
-      subscriptionId = pushSubscription.subscriptionId;
-    } else {
-      var endpointSections = pushSubscription.endpoint.split('/');
-      subscriptionId = endpointSections[endpointSections.length - 1];
-    }
-    
-    var data = {};
-    data.name = document.querySelector('#name').value;
-    data.subId = subscriptionId;
+  var subscriptionId = null;
+  if (pushSubscription.subscriptionId) {
+    subscriptionId = pushSubscription.subscriptionId;
+  } else {
+    var endpointSections = pushSubscription.endpoint.split('/');
+    subscriptionId = endpointSections[endpointSections.length - 1];
+  }
+  var data = {};
+  data.subId = subscriptionId;
 
-    getIdb().put(KEY_VALUE_STORE_NAME, "name", data.name);
-					
-    $.post("/user",{
-    	data: JSON.stringify(data),
-    	contentType: 'application/json',
-    	success: function(data) {
-        console.log('success');
-        console.log(JSON.stringify(data));
-      }
-    });
+  Promise.resolve(getIdb().get(KEY_VALUE_STORE_NAME,'id')).then(function(storedSubId){
+    if (storedSubId !== subscriptionId) {
+      getIdb().put(KEY_VALUE_STORE_NAME, "id", subscriptionId);
+      $.post("/user",{
+        data: JSON.stringify(data),
+        contentType: 'application/json',
+        success: function(data) {
+          console.log('success');
+          console.log(JSON.stringify(data));
+        }
+      });
+    }
   });
 }
 
@@ -114,7 +111,6 @@ function unsubscribeDevice() {
 
           window.PushDemo.ui.setPushChecked(false);
 
-          window.PushDemo.ui.showGCMPushOptions(false);
           return;
         }
 
@@ -124,13 +120,11 @@ function unsubscribeDevice() {
 
             console.error('Não deu pra cancelar o registro');
           }
-
+          getIdb().delete(KEY_VALUE_STORE_NAME, "id");
           window.PushDemo.ui.setPushSwitchDisabled(false);
-          window.PushDemo.ui.showGCMPushOptions(false);
         }).catch(function(e) {
           console.log('descadastrar: ', e);
           window.PushDemo.ui.setPushSwitchDisabled(false);
-          window.PushDemo.ui.showGCMPushOptions(true);
 
           window.PushDemo.ui.setPushChecked(true);
         });

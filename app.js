@@ -12,7 +12,7 @@ var notif_db = new Datastore({ filename: 'gs://#default#/notifications.db', auto
 app.set('views', './views')
 app.set('view engine', 'ejs')
 app.use(express.static('public'));
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({ extended: true }));
 
 app.get('/', function(req, res) {
     res.header("Cache-Control", "no-cache, no-store, must-revalidate");
@@ -23,39 +23,41 @@ app.get('/', function(req, res) {
 
 app.post('/user', function(req, res) {
     var data = JSON.parse(req.body.data);
+    console.log(data);
     db.insert(data);
     res.send(200);
 });
 
 app.post('/send_push', function(req, res){
     var data = JSON.parse(req.body.data);
-    console.log(data);
     var GCM = require('gcm').GCM;
 
     var apiKey = 'AIzaSyCBd1A0TXrPJYhIaHvmwcLvazSsEy7N5qc';
     var gcm = new GCM(apiKey);
 
-    var message = {
-    	registration_id: data.destination,
-    	collapse_key: 'Collapse key', 
-    	'data.key1': 'value1',
-    	'data.key2': 'value2'
-    };
+    db.find({},function (err, docs) {
+        docs.forEach(function(user) {
+            var userNotification = data;
 
-    db.find({subId: data.destination},function (err, docs) {
-        var user = docs[0];
+            var message = {
+                registration_id: user.subId,
+                collapse_key: 'Collapse key', 
+                'data.key1': 'value1',
+                'data.key2': 'value2'
+            };
 
-        gcm.send(message, function(err, messageId){
-            if (err) {
-                console.log(err);
-            } else {
-                data.name = user.name;
-                console.log("notif:" + JSON.stringify(data));
-                notif_db.insert(data, function (err, newDocs) {
-                  console.log("inseridos:" + newDocs);
-                });
-                console.log("Enviado com id: ", messageId);
-            }
+            gcm.send(message, function(err, messageId){
+                if (err) {
+                    console.log(err);
+                } else {
+                    console.log("notif:" + JSON.stringify(userNotification));
+                    userNotification.destination = user.subId;
+                    notif_db.insert(userNotification, function (err, newDocs) {
+                        userNotification.destination = user.subId;
+                        console.log("inseridos:" + JSON.stringify(userNotification));
+                    });
+                }
+            });
         });
     });
 });
@@ -75,11 +77,11 @@ app.get('/users', function(req, res) {
     });
 });
 
-app.get('/notifications/:name', function(req,res){
-    console.log(req.params.name);  
-    var name = req.params.name;
+app.get('/notifications/:id', function(req,res){
     var notifications = [];
-    notif_db.find({name: name}, function (err, docs) {
+    var id = req.params.id;
+    console.log("id: " + id);
+    notif_db.find({destination : id}, function (err, docs) {
       docs.forEach(function(doc){
         notifications.push({
             title: doc.payload.title,
@@ -87,10 +89,10 @@ app.get('/notifications/:name', function(req,res){
         })
       });
 
-      notif_db.remove({name: name}, {}, function (err, numRemoved) {
+      notif_db.remove({destination : id}, {}, function (err, numRemoved) {
           res.setHeader('Content-Type', 'application/json');
           console.log(notifications);
-          res.send(JSON.stringify(notifications));      
+          res.send(JSON.stringify(notifications));
       });
     });
 });
