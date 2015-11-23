@@ -120,7 +120,13 @@ function unsubscribeDevice() {
 
             console.error('Não deu pra cancelar o registro');
           }
-          getIdb().delete(KEY_VALUE_STORE_NAME, "id");
+          console.log("vai remover a chave")
+          Promise.resolve(getIdb().get(KEY_VALUE_STORE_NAME,'id')).then(function(storedSubId){
+            fetch("/remove_user/"+storedSubId).then(function(response) { 
+              console.log("removeu");
+            });
+            getIdb().delete(KEY_VALUE_STORE_NAME, "id");
+          });
           window.PushDemo.ui.setPushSwitchDisabled(false);
         }).catch(function(e) {
           console.log('descadastrar: ', e);

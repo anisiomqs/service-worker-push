@@ -28,6 +28,14 @@ app.post('/user', function(req, res) {
     res.send(200);
 });
 
+app.get('/remove_user/:id', function(req, res) {
+    db.remove({subId : req.params.id}, {}, function(err, numRemoved) {
+        res.setHeader('Content-Type', 'application/json');
+        console.log("User removed:" + req.params.id);
+        res.send(req.params.id);
+    });
+});
+
 app.post('/send_push', function(req, res){
     var data = JSON.parse(req.body.data);
     var GCM = require('gcm').GCM;
